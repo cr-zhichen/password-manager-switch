@@ -49,7 +49,9 @@ class ProviderCatalog(private val context: Context) {
             ProviderKind.AUTOFILL -> Manifest.permission.BIND_AUTOFILL_SERVICE
         }
         // The query already applies enabled-state overrides; service.enabled is only the manifest default.
-        if (!service.exported || service.permission != permission) return null
+        // System-bound password services can be non-exported (for example 1Password).
+        // The required bind permission, rather than access from ordinary apps, identifies them.
+        if (service.permission != permission) return null
         return ProviderEntry(
             ComponentName(service.packageName, service.name).flattenToString(),
             pm.getApplicationLabel(service.applicationInfo).toString(),

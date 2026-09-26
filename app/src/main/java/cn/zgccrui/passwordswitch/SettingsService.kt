@@ -1,5 +1,7 @@
 package cn.zgccrui.passwordswitch
 
+import android.content.Context
+import android.os.Binder
 import android.os.Bundle
 import androidx.annotation.Keep
 import java.util.concurrent.Executors
@@ -20,7 +22,10 @@ fun Bundle.toSnapshot(): SettingsSnapshot {
 
 /** Instantiated by Shizuku with shell/root identity, never an exported Android Service. */
 @Keep
-class SettingsService : ISettingsService.Stub() {
+class SettingsService(context: Context) : ISettingsService.Stub() {
+    // Shizuku v13 constructs this context for the owning app and its Android user.
+    private val appUserId = context.applicationInfo.uid / 100000
+    private val catalog = ProviderCatalog(context)
     private val reader = Executors.newSingleThreadExecutor()
     private val controller = SettingsController(ShellSettingsStore(CommandRunner { arguments ->
         val process = ProcessBuilder(arguments).redirectErrorStream(true).start()
@@ -62,6 +67,28 @@ class SettingsService : ISettingsService.Stub() {
         val before = expected.toSnapshot()
         require(before.userId == userId)
         controller.replace(before, target.toSnapshot())
+    }
+
+    @Synchronized
+    override fun listProviders(userId: Int): Bundle {
+        val identity = Binder.clearCallingIdentity()
+        return try {
+            require(userId == appUserId) { "不能扫描其他 Android 用户的应用。" }
+            // Package queries run as shell, so non-exported providers remain discoverable.
+            val providers = catalog.scan()
+            Bundle().apply {
+                putBoolean("ok", true)
+                putParcelableArrayList("providers", ArrayList(providers.map { it.toBundle() }))
+            }
+        } catch (failure: Exception) {
+            Bundle().apply {
+                putBoolean("ok", false)
+                putString("message", "密码服务扫描失败，请确认 Shizuku 运行并已授权，然后刷新。")
+                putString("detail", failure.toString().take(4000))
+            }
+        } finally {
+            Binder.restoreCallingIdentity(identity)
+        }
     }
 
     private fun respond(userId: Int, action: () -> SettingsSnapshot): Bundle = try {

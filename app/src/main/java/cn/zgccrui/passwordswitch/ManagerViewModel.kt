@@ -179,7 +179,7 @@ class ManagerViewModel(application: Application) : AndroidViewModel(application)
         if (!state.value.canApply) return
         val draft = state.value
         execute(true) action@{ service, before ->
-            val entries = catalog.scan()
+            val entries = service.scanProviders(userId)
             require(draft.credential == null || entries.any { it.kind == ProviderKind.CREDENTIAL && it.component == draft.credential }) {
                 "选中的凭据服务已不可用，请刷新后重新选择。"
             }
@@ -244,7 +244,7 @@ class ManagerViewModel(application: Application) : AndroidViewModel(application)
                         unconfirmedWrite = snapshot == null && (write || it.unconfirmedWrite),
                     )
                 }
-                val entries = withContext(Dispatchers.IO) { catalog.scan() }
+                val entries = withContext(Dispatchers.IO) { service.scanProviders(userId) }
                 mutableState.update { it.copy(providers = entries, scanned = true) }
             } catch (cancelled: CancellationException) {
                 throw cancelled

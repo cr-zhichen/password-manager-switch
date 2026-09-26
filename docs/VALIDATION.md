@@ -1,5 +1,16 @@
 # v1.0.0 验证记录
 
+## v1.0.1：1Password 发现修复
+
+- 2026-09-26 在用户的 HyperOS 真机（Android 17）检查 1Password 8.12.36：两项服务均已启用、绑定权限正确，但为 `exported=false`。
+- 核对 AOSP 服务可见性实现，基于 intent 的应用可见性声明只匹配导出组件；修复不能仅移除本地 exported 判断，授权后的发现和写入前复查均改为 Shizuku 查询。
+- `mise run package` 和正式签名 `mise run release` 均通过，20 项既有核心测试、Lint、工作流和脚本检查通过。
+- Android 14 模拟器验证 Shizuku 查询、跨进程名称/图标/能力传输及 Bitwarden 发现正常。
+- 同签名修复包覆盖安装到 HyperOS 真机，两个服务选择列表均实际显示 1Password；原应用数据保留，三项 secure settings 在验证前后逐字节一致。
+- 此次真机验收仅验证发现/显示及配置读取；没有代替用户执行服务切换，也未创建或读取任何密码、通行密钥。
+
+---
+
 日期：2026-09-26。
 
 ## 自动检查

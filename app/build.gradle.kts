@@ -21,8 +21,8 @@ android {
         applicationId = "cn.zgccrui.passwordswitch"
         minSdk = 34
         targetSdk = 36
-        versionCode = releaseVersionCode ?: 1000
-        versionName = releaseTag?.removePrefix("v") ?: "1.0.0"
+        versionCode = releaseVersionCode ?: 1002
+        versionName = releaseTag?.removePrefix("v") ?: "1.0.1"
     }
     signingConfigs.getByName("debug") {
         storeFile = rootProject.file(".signing/debug.keystore")
