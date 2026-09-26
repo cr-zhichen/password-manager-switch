@@ -1,0 +1,96 @@
+[tools]
+java = "temurin-17.0.16+8"
+gradle = "8.13.0"
+android-sdk = "19.0"
+actionlint = "1.7.12"
+shellcheck = "0.11.0"
+
+[tasks.sdk]
+description = "安装 Android 编译依赖（请先在终端接受 SDK 许可证）"
+run = ["yes | sdkmanager --licenses > /dev/null", "sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0'"]
+
+[tasks.signing]
+description = "准备项目专用调试签名"
+run = """
+mkdir -p .signing
+if [ ! -f .signing/debug.keystore ]; then
+  keytool -genkeypair -keystore .signing/debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=Password Manager Switch'
+fi
+"""
+
+[tasks.build]
+description = "构建可安装 APK"
+depends = ["signing"]
+run = "gradle --no-daemon assembleDebug"
+
+[tasks.verify]
+description = "Android Lint 与设置事务逻辑测试（不包含 UI 单元测试）"
+run = "gradle --no-daemon lintDebug testDebugUnitTest"
+depends = ["workflows:lint"]
+
+[tasks.package]
+description = "检查并构建 APK"
+depends = ["signing", "workflows:lint"]
+run = "gradle --no-daemon lintDebug testDebugUnitTest assembleDebug"
+
+[tasks.install]
+description = "安装至 ANDROID_SERIAL 指定的设备"
+run = "adb install -r app/build/outputs/apk/debug/app-debug.apk"
+
+[tasks.devices]
+description = "查看可连接的设备"
+run = "adb devices -l"
+
+[tasks.adb]
+description = "运行 Android 调试命令（参数直接传给 adb）"
+run = "adb"
+
+[tasks.export]
+description = "导出 APK 至 APP_OUTPUT_DIR 或 dist"
+run = """
+mkdir -p "${APP_OUTPUT_DIR:-dist}"
+cp app/build/outputs/apk/debug/app-debug.apk "${APP_OUTPUT_DIR:-dist}/password-manager-switch.apk"
+"""
+
+[tasks."qa:setup"]
+description = "安装 Apple Silicon 上的 Android 14 模拟器组件"
+run = "sdkmanager 'emulator' 'system-images;android-34;default;arm64-v8a'"
+
+[tasks."qa:create"]
+description = "创建项目内的 Android 模拟器"
+run = """
+export ANDROID_AVD_HOME="$PWD/work/avd-home"
+mkdir -p "$ANDROID_AVD_HOME"
+if [ ! -d work/qa.avd ]; then
+  printf 'no\\n' | avdmanager create avd --name password-switch-qa --package 'system-images;android-34;default;arm64-v8a' --path "$PWD/work/qa.avd" --device pixel
+fi
+"""
+
+[tasks."qa:emulator"]
+description = "启动项目内模拟器，用于人工界面验收"
+run = """
+export ANDROID_AVD_HOME="$PWD/work/avd-home"
+"$ANDROID_HOME/emulator/emulator" -avd password-switch-qa -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
+"""
+
+[tasks."workflows:lint"]
+description = "检查 Actions 和发布脚本"
+run = ["actionlint .github/workflows/*.yml", "shellcheck scripts/*.sh"]
+
+[tasks."signing:generate-release"]
+description = "生成独立加密发布证书与本地随机密码，不覆盖已有文件"
+run = "bash scripts/generate-release-key.sh"
+
+[tasks."release:validate-tag"]
+description = "确认发布 Tag 指向当前提交"
+run = '''
+set -eu
+: "${RELEASE_TAG:?请设置 RELEASE_TAG}"
+git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"
+test "$(git rev-list -n 1 "refs/tags/$RELEASE_TAG")" = "$(git rev-parse HEAD)"
+'''
+
+[tasks.release]
+description = "检查、构建并验证正式签名 APK"
+depends = ["workflows:lint"]
+run = "bash scripts/build-release.sh"

@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.PasswordSwitch" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowSoftInputMode">adjustResize</item>
+        <item name="android:colorAccent">#315DA8</item>
+    </style>
+    <color name="launcher_background">#E0E9FF</color>
+</resources>

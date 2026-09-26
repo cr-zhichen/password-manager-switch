@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: release
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup mise
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+
+      - name: Validate release tag
+        run: mise run release:validate-tag
+
+      - name: Prepare Android SDK
+        run: mise run sdk
+
+      - name: Build and verify signed APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: mise run release
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
+          prerelease: ${{ contains(env.RELEASE_TAG, '-') }}
+          make_latest: ${{ contains(env.RELEASE_TAG, '-') && 'false' || 'true' }}
+          generate_release_notes: true
+          body_path: docs/releases/${{ env.RELEASE_TAG }}.md
+          fail_on_unmatched_files: true
+          files: |
+            dist/password-manager-switch-${{ env.RELEASE_TAG }}.apk
+            dist/password-manager-switch-${{ env.RELEASE_TAG }}.apk.sha256

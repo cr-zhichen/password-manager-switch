@@ -1,0 +1,16 @@
+.gradle/
+.kotlin/
+.idea/
+**/build/
+local.properties
+.signing/
+dist/
+work/
+*.iml
+.DS_Store
+*.apk
+*.aab
+*.keystore
+*.jks
+*.p12
+!/signing/release.p12
