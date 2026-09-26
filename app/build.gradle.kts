@@ -22,7 +22,7 @@ android {
         minSdk = 34
         targetSdk = 36
         versionCode = releaseVersionCode ?: 1002
-        versionName = releaseTag?.removePrefix("v") ?: "1.0.1"
+        versionName = releaseTag?.removePrefix("v") ?: "1.1.0"
     }
     signingConfigs.getByName("debug") {
         storeFile = rootProject.file(".signing/debug.keystore")
