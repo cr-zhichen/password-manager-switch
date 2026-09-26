@@ -4,7 +4,7 @@
 
 [下载最新版](https://github.com/cr-zhichen/password-manager-switch/releases/latest) · [MIT 许可证](LICENSE)
 
-<img src="docs/screenshots/configured.png" width="260" alt="已读取 Bitwarden 系统配置"> <img src="docs/screenshots/provider-picker.png" width="260" alt="从已安装应用中选择凭据提供者">
+<img src="docs/screenshots/configured.jpg" width="260" alt="已读取 1Password 系统配置"> <img src="docs/screenshots/provider-picker.jpg" width="260" alt="从已安装应用中选择凭据提供者">
 
 ## 能做什么
 
